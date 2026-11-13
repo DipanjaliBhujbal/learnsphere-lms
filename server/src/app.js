@@ -20,12 +20,14 @@ const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
 
+// Security middleware
 app.use(helmet());
 
 // CORS configuration
 const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:5174",
+    "https://learnsphere-lms.vercel.app",
     process.env.CLIENT_URL,
 ].filter(Boolean);
 
@@ -39,15 +41,22 @@ app.use(
             return callback(new Error("Not allowed by CORS"));
         },
         credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
     })
 );
 
+// Logging middleware
 app.use(morgan("dev"));
 
+// Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Cookie parsing middleware
 app.use(cookieParser());
 
+// Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 100,
@@ -57,6 +66,7 @@ const limiter = rateLimit({
 
 app.use("/api", limiter);
 
+// API routes
 app.use("/api", healthRoutes);
 app.use("/api", userRoutes);
 app.use("/api/courses", courseRoutes);
@@ -65,12 +75,14 @@ app.use("/api/lessons", lessonRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/reviews", reviewRoutes);
 
+// Swagger API documentation
 app.use(
     "/api/docs",
     swaggerUi.serve,
     swaggerUi.setup(swaggerSpec)
 );
 
+// Global error handler
 app.use(errorHandler);
 
 module.exports = app;
