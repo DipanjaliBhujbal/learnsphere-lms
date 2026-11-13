@@ -20,48 +20,43 @@ const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
 
-// Security middleware
 app.use(helmet());
 
 // CORS configuration
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-];
+    "http://localhost:5173",
+    "http://localhost:5174",
+    process.env.CLIENT_URL,
+].filter(Boolean);
 
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests without an Origin header (e.g. Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    cors({
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
 
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
+            return callback(new Error("Not allowed by CORS"));
+        },
+        credentials: true,
+    })
 );
 
-// Request logging
 app.use(morgan("dev"));
 
-// Body parsing
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
 });
 
 app.use("/api", limiter);
 
-// API Routes
 app.use("/api", healthRoutes);
 app.use("/api", userRoutes);
 app.use("/api/courses", courseRoutes);
@@ -70,14 +65,12 @@ app.use("/api/lessons", lessonRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-// Swagger API Documentation
 app.use(
-  "/api/docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec)
+    "/api/docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec)
 );
 
-// Global Error Handler
 app.use(errorHandler);
 
 module.exports = app;
